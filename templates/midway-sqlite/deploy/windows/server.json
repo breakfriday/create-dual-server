@@ -1,0 +1,5 @@
+{
+  "dataDir": "../data",
+  "logDir": "../logs",
+  "httpPort": __HTTP_PORT__
+}

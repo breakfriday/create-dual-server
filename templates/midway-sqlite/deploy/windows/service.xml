@@ -1,0 +1,20 @@
+<service>
+  <id>__APP_NAME__</id>
+  <name>__APP_NAME__</name>
+  <description>Midway API server with SQLite storage</description>
+  <executable>%BASE%\runtime\node.exe</executable>
+  <arguments>"%BASE%\app\bootstrap.js"</arguments>
+  <workingdirectory>%BASE%\app</workingdirectory>
+  <env name="NODE_ENV" value="production" />
+  <env name="SERVER_CONFIG_FILE" value="%BASE%\config\server.json" />
+  <startmode>Automatic</startmode>
+  <delayedAutoStart />
+  <stoptimeout>30 sec</stoptimeout>
+  <onfailure action="restart" delay="10 sec" />
+  <resetfailure>1 hour</resetfailure>
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>5</keepFiles>
+  </log>
+</service>
