@@ -1,6 +1,6 @@
 # __APP_NAME__
 
-基于 MidwayJS 4、TypeScript 和 Koa 的服务端应用，使用 TypeORM + better-sqlite3 管理 SQLite 数据库，支持打包为自带 Node.js 运行时的 Windows 服务。
+基于 MidwayJS 4、TypeScript 和 Koa 的服务端应用，使用 TypeORM + better-sqlite3 管理 SQLite 数据库，支持打包为自带 Node.js 运行时的 Windows 服务或 Docker 离线部署包。
 
 ## 快速开始
 
@@ -190,3 +190,18 @@ npm start
 3. 启动服务，等待迁移完成，并通过 `/health` 和业务接口确认运行正常。
 
 保留原有 `cookieKeys`，不要用新包密钥覆盖。迁移后的回滚应恢复匹配的程序和数据库备份；Windows 卸载脚本只注销服务，不删除配置和数据。
+
+## Docker 打包与离线部署
+
+生成的应用内置 `deploy/docker/Dockerfile`、Compose 配置和 `scripts/build-docker.cjs`。在应用根目录执行：
+
+```sh
+npm install
+npm run build:docker
+```
+
+构建需要 Docker Linux 容器以及可下载基础镜像和依赖的网络。应用在镜像内编译并进行生产 SQLite/HTTP 检查，默认输出 `release/docker/<名称>_<版本>_<构建标识>/`，包含镜像 tar、`compose.yaml`、随机密钥 `.env` 和部署说明。使用 `-- --no-export` 可跳过 tar 导出。
+
+目标机器导入镜像后，通过 Compose 离线启动；数据和日志挂载到宿主机，支持版本升级及备份恢复。
+
+详细操作见 [Docker 部署手册](deploy/docker/README.md)。

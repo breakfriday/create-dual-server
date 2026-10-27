@@ -1,0 +1,50 @@
+name: __APP_NAME__
+services:
+  server:
+    image: ${SERVER_IMAGE:?请使用交付目录的 .env 或填写镜像名称及版本}
+    init: true
+    restart: unless-stopped
+    user: "${SERVER_UID:-1000}:${SERVER_GID:-1000}"
+    ports:
+      - "${SERVER_BIND_IP:-0.0.0.0}:${SERVER_HTTP_PORT:-__HTTP_PORT__}:__HTTP_PORT__"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-__APP_NAME__}
+      PGDATABASE: ${POSTGRES_DB:-__APP_NAME__}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?请设置数据库密码}
+      COOKIE_KEYS: ${COOKIE_KEYS:?请在 .env 中设置随机 COOKIE_KEYS}
+    volumes:
+      - "${SERVER_UPLOAD_PATH:-./data/uploads}:/app/uploads"
+      - "${SERVER_LOG_PATH:-./data/logs}:/app/logs"
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:17-bookworm}
+    container_name: ${POSTGRES_CONTAINER_NAME:-__APP_NAME__-PostgreSQL}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-__APP_NAME__}
+      POSTGRES_DB: ${POSTGRES_DB:-__APP_NAME__}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请设置数据库密码}
+    volumes:
+      - "${POSTGRES_DATA_PATH:-./data/postgres}:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -51,7 +51,7 @@ test('existing files, hidden files and symlink destinations are protected', t =>
 
 test('invalid flags and injection-like names fail without writing files', t => {
   const cwd = fixture(t);
-  for (const args of [['--unknown'], ['one', 'two'], ['--port'], ['--port', '70000'], ['--port', '1e3'], ['--name', 'bad&name'], ['--name', '../bad'], ['--name', '123'], ['--name', 'a'.repeat(65)]]) {
+  for (const args of [['--database', 'mysql'], ['--unknown'], ['one', 'two'], ['--port'], ['--port', '70000'], ['--port', '1e3'], ['--name', 'bad&name'], ['--name', '../bad'], ['--name', '123'], ['--name', 'a'.repeat(65)]]) {
     assert.equal(run(cwd, ...args).status, 1, args.join(' '));
   }
   assert.deepEqual(readdirSync(cwd), []);
@@ -63,4 +63,14 @@ test('help/version do not write; current empty directory is supported', t => {
   assert.equal(run(cwd, '--version').stdout.trim(), JSON.parse(readFileSync(join(root, 'package.json'))).version);
   assert.deepEqual(readdirSync(cwd), []);
   assert.equal(run(cwd, '.', '--name', 'current-app').status, 0);
+});
+
+test('postgres selection generates PostgreSQL migration and deployment configuration', t => {
+  const cwd = fixture(t);
+  assert.equal(run(cwd, 'pg-app', '--database', 'postgres').status, 0);
+  const app = join(cwd, 'pg-app');
+  const tests = spawnSync(process.execPath, ['--test', 'scripts/test/deployment.test.cjs'], { cwd: app, encoding: 'utf8' });
+  assert.equal(tests.status, 0, tests.stdout + tests.stderr);
+  assert.match(readFileSync(join(app, 'src/migration/1786320000000-CreateNotes.ts'), 'utf8'), /SERIAL PRIMARY KEY/);
+  assert.match(readFileSync(join(app, 'deploy/docker/compose.yaml'), 'utf8'), /pg-app-PostgreSQL/);
 });

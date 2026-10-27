@@ -1,0 +1,5 @@
+{
+  "uploadDir": "../data/uploads",
+  "logDir": "../logs",
+  "httpPort": __HTTP_PORT__
+}

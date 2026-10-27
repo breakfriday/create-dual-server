@@ -2,7 +2,7 @@
   "name": "__APP_NAME__",
   "version": "0.1.0",
   "private": true,
-  "description": "MidwayJS server with SQLite and portable Windows deployment",
+  "description": "MidwayJS server with SQLite and portable Windows and Docker deployment",
   "engines": { "node": "22.x || 24.x" },
   "scripts": {
     "dev": "cross-env NODE_ENV=local mwtsc --watch --run @midwayjs/mock/app.js",
@@ -11,6 +11,7 @@
     "check": "tsc --noEmit",
     "test": "node --test scripts/test/*.test.cjs",
     "test:production": "npm run build && node scripts/smoke-production.cjs --http",
+    "build:docker": "node scripts/build-docker.cjs",
     "build:winserver": "node scripts/build-winserver.cjs"
   },
   "dependencies": {
