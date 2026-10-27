@@ -29,6 +29,17 @@ try {
   const app = join(temp, '中文 example server');
   const cli = join(consumer, 'node_modules', pkg.name, 'bin/create-dual-server.mjs');
   run(process.execPath, [cli, app, '--name', 'integration-server'], temp);
+  // Docker's hidden context/env files must also survive npm publication.
+  for (const file of ['.dockerignore', 'deploy/docker/.env.example', 'deploy/docker/.gitignore', 'deploy/docker/Dockerfile', 'deploy/docker/compose.yaml', 'scripts/build-docker.cjs']) {
+    assert.ok(readFileSync(join(app, file), 'utf8').length > 0, file);
+  }
+  const postgresApp = join(temp, 'postgres app');
+  run(process.execPath, [cli, postgresApp, '--name', 'integration-pg', '--database', 'postgres'], temp);
+  const postgresPkg = JSON.parse(readFileSync(join(postgresApp, 'package.json')));
+  assert.ok(postgresPkg.dependencies.pg);
+  assert.equal(postgresPkg.dependencies['better-sqlite3'], undefined);
+  assert.match(readFileSync(join(postgresApp, 'deploy/docker/compose.yaml'), 'utf8'), /integration-pg-PostgreSQL/);
+  npm(['test'], postgresApp);
   npm(['install', '--no-audit', '--no-fund'], app);
   npm(['run', 'check'], app);
   npm(['test'], app);
