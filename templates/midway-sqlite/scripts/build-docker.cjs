@@ -56,9 +56,9 @@ function main() {
   for (const name of ['compose.yaml', 'README.md']) copyFileSync(join(serverDir, 'deploy/docker', name), join(output, name));
   const uid = process.getuid?.() || 1000;
   const gid = process.getgid?.() || 1000;
-  writeFileSync(join(output, '.env'), `SERVER_IMAGE=${image}\nSERVER_HTTP_PORT=__HTTP_PORT__\nSERVER_BIND_IP=0.0.0.0\nSERVER_UID=${uid}\nSERVER_GID=${gid}\nSERVER_DATA_PATH=./data\nSERVER_LOG_PATH=./logs\nCOOKIE_KEYS=${randomBytes(32).toString('hex')}\n`, { mode: 0o600 });
+  writeFileSync(join(output, 'pro.env'), `SERVER_IMAGE=${image}\nSERVER_HTTP_PORT=__HTTP_PORT__\nSERVER_BIND_IP=0.0.0.0\nSERVER_UID=${uid}\nSERVER_GID=${gid}\nSERVER_DATA_PATH=./data\nSERVER_LOG_PATH=./logs\nCOOKIE_KEYS=${randomBytes(32).toString('hex')}\n`, { mode: 0o600 });
   if (postgres) {
-    const envPath = join(output, '.env');
+    const envPath = join(output, 'pro.env');
     const env = readFileSync(envPath, 'utf8')
       .replace('SERVER_DATA_PATH=./data', 'SERVER_UPLOAD_PATH=./data/uploads')
       .replace('SERVER_LOG_PATH=./logs', 'SERVER_LOG_PATH=./data/logs');

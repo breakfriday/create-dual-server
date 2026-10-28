@@ -42,13 +42,16 @@ test('Docker packaging exports a unique offline bundle with customized config an
   f.main();
   const outputs = readdirSync(join(f.app, 'release/docker')).map(name => join(f.app, 'release/docker', name));
   assert.equal(outputs.length, 2);
-  const configs = outputs.map(path => readFileSync(join(path, '.env'), 'utf8'));
+  const configs = outputs.map(path => readFileSync(join(path, 'pro.env'), 'utf8'));
   for (const [index, path] of outputs.entries()) {
     assert.match(configs[index], /SERVER_IMAGE=docker-example:0.1.0\n/);
     assert.match(configs[index], /SERVER_HTTP_PORT=8123\n/);
     assert.match(configs[index], /SERVER_UID=1234\nSERVER_GID=2345/);
     assert.match(configs[index], /COOKIE_KEYS=[a-f0-9]{64}\n/);
     assert.ok(readdirSync(path).includes('docker-example_0.1.0.tar'));
+    assert.ok(readdirSync(path).includes('pro.env'));
+    assert.ok(!readdirSync(path).includes('.env'));
+    assert.match(readFileSync(join(path, 'README.md'), 'utf8'), /docker compose --env-file pro\.env up/);
     assert.match(readFileSync(join(path, 'compose.yaml'), 'utf8'), /:8123"/);
   }
   assert.notEqual(configs[0], configs[1]);
@@ -88,7 +91,7 @@ test('PostgreSQL bundle exports both images and the three data directories', t =
   f.main();
   const output = join(f.app, 'release/docker', readdirSync(join(f.app, 'release/docker'))[0]);
   assert.deepEqual(readdirSync(join(output, 'data')).sort(), ['logs', 'postgres', 'uploads']);
-  const env = readFileSync(join(output, '.env'), 'utf8');
+  const env = readFileSync(join(output, 'pro.env'), 'utf8');
   assert.match(env, /POSTGRES_CONTAINER_NAME=docker-example-PostgreSQL/);
   assert.match(env, /POSTGRES_PASSWORD=[a-f0-9]{64}/);
   assert.match(env, /SERVER_UPLOAD_PATH=.\/data\/uploads/);

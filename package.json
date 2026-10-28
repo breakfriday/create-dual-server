@@ -1,6 +1,6 @@
 {
   "name": "@break_happy/create-dual-server",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Scaffold a MidwayJS SQLite or PostgreSQL server with portable Windows service and offline Docker deployment.",
   "type": "module",
   "bin": {

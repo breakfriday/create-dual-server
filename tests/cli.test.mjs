@@ -74,3 +74,88 @@ test('postgres selection generates PostgreSQL migration and deployment configura
   assert.match(readFileSync(join(app, 'src/migration/1786320000000-CreateNotes.ts'), 'utf8'), /SERIAL PRIMARY KEY/);
   assert.match(readFileSync(join(app, 'deploy/docker/compose.yaml'), 'utf8'), /pg-app-PostgreSQL/);
 });
+
+const interactive = (cwd, input, ...args) => spawnSync(process.execPath,
+  [cli, ...args, '--interactive'], { cwd, input, encoding: 'utf8', timeout: 10000 });
+
+test('interactive creation asks for name and database, retries invalid answers', t => {
+  const cwd = fixture(t);
+  const result = interactive(cwd, 'Bad Name\nchosen-server\n3\n2\n', 'chosen-folder');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /应用名称/);
+  assert.match(result.stdout, /数据库方案/);
+  const pkg = JSON.parse(readFileSync(join(cwd, 'chosen-folder/package.json')));
+  assert.equal(pkg.name, 'chosen-server');
+  assert.equal(pkg.dualServer.database, 'postgres');
+  assert.ok(pkg.dependencies.pg);
+  assert.ok(!readdirSync(join(cwd, 'chosen-folder')).includes('node_modules'));
+  assert.ok(!readdirSync(join(cwd, 'chosen-folder')).includes('dist'));
+});
+
+test('interactive defaults include directory; explicit options and yes skip prompts', t => {
+  const cwd = fixture(t);
+  const defaults = interactive(cwd, '\n\n\n');
+  assert.equal(defaults.status, 0, defaults.stdout + defaults.stderr);
+  const pkg = JSON.parse(readFileSync(join(cwd, 'dual-server-app/package.json')));
+  assert.equal(pkg.name, 'dual-server-app');
+  assert.equal(pkg.dualServer.database, 'better-sqlite3');
+  const explicit = interactive(cwd, '', 'explicit', '--name', 'explicit', '--database', 'postgres');
+  assert.equal(explicit.status, 0, explicit.stderr);
+  assert.doesNotMatch(explicit.stdout, /应用名称|数据库方案/);
+  const yes = interactive(cwd, '', 'defaults', '--yes');
+  assert.equal(yes.status, 0, yes.stderr);
+  assert.doesNotMatch(yes.stdout, /应用名称|数据库方案/);
+});
+
+test('EOF in the wizard cancels before creating a project', t => {
+  const cwd = fixture(t);
+  const result = interactive(cwd, 'chosen-name\n', 'cancelled');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /cancelled/);
+  assert.deepEqual(readdirSync(cwd), []);
+});
+
+test('PostgreSQL dev config initializes once and native env loading honors overrides', t => {
+  const cwd = fixture(t);
+  assert.equal(run(cwd, 'local-pg', '--database', 'postgres', '--port', '8125').status, 0);
+  const app = join(cwd, 'local-pg');
+  const init = () => spawnSync(process.execPath, ['scripts/init-dev-env.cjs'], { cwd: app, encoding: 'utf8' });
+  assert.equal(init().status, 0);
+  const original = readFileSync(join(app, 'dev.env'), 'utf8');
+  assert.match(original, /PGUSER=local-pg/);
+  assert.match(original, /SERVER_HTTP_PORT=8125/);
+  const customized = original.replace('PGPORT=5432', 'PGPORT=15432').replace('local-pg-dev-password', 'custom-development-password');
+  writeFileSync(join(app, 'dev.env'), customized);
+  assert.equal(init().status, 0);
+  assert.equal(readFileSync(join(app, 'dev.env'), 'utf8'), customized);
+  const env = { ...process.env };
+  delete env.PGPORT;
+  delete env.PGPASSWORD;
+  const probe = extra => spawnSync(process.execPath, ['--env-file-if-exists=dev.env', '-e',
+    'console.log(JSON.stringify([process.env.PGPORT, process.env.PGPASSWORD]))'], { cwd: app, env: { ...env, ...extra }, encoding: 'utf8' });
+  assert.deepEqual(JSON.parse(probe({}).stdout), ['15432', 'custom-development-password']);
+  assert.deepEqual(JSON.parse(probe({ PGPORT: '25432' }).stdout), ['25432', 'custom-development-password']);
+  // Simulate mwtsc's worker changing cwd and reusing the parent's Node flags.
+  mkdirSync(join(app, 'node_modules/mwtsc/bin'), { recursive: true });
+  writeFileSync(join(app, 'node_modules/mwtsc/bin/mwtsc.js'), `
+    const { spawnSync } = require('node:child_process');
+    const env = { ...process.env };
+    delete env.PGPORT;
+    delete env.PGPASSWORD;
+    const result = spawnSync(process.execPath, [...process.execArgv, '-e',
+      'console.log(JSON.stringify([process.env.PGPORT, process.env.PGPASSWORD]))'],
+      { cwd: require('node:os').tmpdir(), env, encoding: 'utf8' });
+    process.stdout.write(result.stdout);
+    process.stderr.write(result.stderr);
+    process.exitCode = result.status;
+  `);
+  const worker = spawnSync(process.execPath, ['--env-file-if-exists=dev.env', 'scripts/dev.cjs'],
+    { cwd: app, env, encoding: 'utf8' });
+  assert.equal(worker.status, 0, worker.stderr);
+  assert.doesNotMatch(worker.stderr, /not found/);
+  assert.deepEqual(JSON.parse(worker.stdout), ['15432', 'custom-development-password']);
+  const pkg = JSON.parse(readFileSync(join(app, 'package.json')));
+  assert.match(pkg.scripts.dev, /--env-file-if-exists=dev.env/);
+  assert.match(pkg.scripts['dev:db'], /--project-directory \. --env-file dev.env/);
+  assert.match(readFileSync(join(app, '.gitignore'), 'utf8'), /dev\.env/);
+});

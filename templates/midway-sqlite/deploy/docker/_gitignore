@@ -1,3 +1,4 @@
-.env
+pro.env
 data/
 logs/
+.env

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+logs/
+run/
+release/
+data/
+*.sqlite*
+scripts/*.exe
+config/server.json
+
+dev.env

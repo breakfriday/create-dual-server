@@ -200,7 +200,7 @@ npm install
 npm run build:docker
 ```
 
-构建需要 Docker Linux 容器以及可下载基础镜像和依赖的网络。应用在镜像内编译并进行生产 SQLite/HTTP 检查，默认输出 `release/docker/<名称>_<版本>_<构建标识>/`，包含镜像 tar、`compose.yaml`、随机密钥 `.env` 和部署说明。使用 `-- --no-export` 可跳过 tar 导出。
+构建需要 Docker Linux 容器以及可下载基础镜像和依赖的网络。应用在镜像内编译并进行生产 SQLite/HTTP 检查，默认输出 `release/docker/<名称>_<版本>_<构建标识>/`，包含镜像 tar、`compose.yaml`、随机密钥 `pro.env` 和部署说明。使用 `-- --no-export` 可跳过 tar 导出。
 
 目标机器导入镜像后，通过 Compose 离线启动；数据和日志挂载到宿主机，支持版本升级及备份恢复。
 

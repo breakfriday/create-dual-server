@@ -1,13 +1,13 @@
 services:
   server:
-    image: ${SERVER_IMAGE:?请使用交付目录的 .env 或填写镜像名称及版本}
+    image: ${SERVER_IMAGE:?请使用交付目录的 pro.env 或填写镜像名称及版本}
     init: true
     restart: unless-stopped
     user: "${SERVER_UID:-1000}:${SERVER_GID:-1000}"
     ports:
       - "${SERVER_BIND_IP:-0.0.0.0}:${SERVER_HTTP_PORT:-__HTTP_PORT__}:__HTTP_PORT__"
     environment:
-      COOKIE_KEYS: ${COOKIE_KEYS:?请在 .env 中设置随机 COOKIE_KEYS}
+      COOKIE_KEYS: ${COOKIE_KEYS:?请在 pro.env 中设置随机 COOKIE_KEYS}
     volumes:
       - "${SERVER_DATA_PATH:-./data}:/app/data"
       - "${SERVER_LOG_PATH:-./logs}:/app/logs"
